@@ -1,12 +1,11 @@
-import XCTest
 @testable import InfomaniakDeviceCheck
+import XCTest
 
 final class InfomaniakDeviceCheckTests: XCTestCase {
-    func testExample() throws {
-        // XCTest Documentation
-        // https://developer.apple.com/documentation/xctest
-
-        // Defining Test Cases and Test Methods
-        // https://developer.apple.com/documentation/xctest/defining_test_cases_and_test_methods
+    func testAttestationToken() async throws {
+        let attestation = try await InfomaniakDeviceCheck().generateAttestationFor(
+            targetUrl: URL(string: "https://login.infomaniak.com")!,
+            bundleId: "com.infomaniak.mail"
+        )
     }
 }
