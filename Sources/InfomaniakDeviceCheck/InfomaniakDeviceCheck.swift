@@ -18,7 +18,7 @@ struct ValidApiResponse<T: Codable>: Codable {
     let data: T
 }
 
-public struct InfomaniakDeviceCheck {
+@frozen public struct InfomaniakDeviceCheck {
     public static let tokenHeaderField = "Ik-mobile-token"
 
     private let baseURL: URL
@@ -34,7 +34,7 @@ public struct InfomaniakDeviceCheck {
         case post = "POST"
     }
 
-    public enum Environment {
+    @frozen public enum Environment {
         case prod
         case preprod
     }
@@ -158,7 +158,7 @@ public struct InfomaniakDeviceCheck {
     }
 
     private func performRequest<T: Decodable>(_ request: URLRequest) async throws -> T {
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, _) = try await URLSession.shared.data(for: request)
         return try JSONDecoder().decode(T.self, from: data)
     }
 }
