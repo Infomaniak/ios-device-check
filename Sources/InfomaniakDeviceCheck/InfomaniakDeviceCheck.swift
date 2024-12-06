@@ -48,12 +48,13 @@ public struct InfomaniakDeviceCheck {
                                        forceTestValidation: Bool = false) async throws -> String {
         let service = DCAppAttestService.shared
 
-        guard service.isSupported else {
+        guard service.isSupported || forceTestValidation else {
             throw ErrorDomain.notSupported
         }
+
         let verificationChallengeId = UUID().uuidString
 
-        let keyId = try await service.generateKey()
+        let keyId = try await service.generateKey(forceTestValidation: forceTestValidation)
 
         let serverChallenge = try await serverChallenge(verificationChallengeId: verificationChallengeId)
 
@@ -63,7 +64,11 @@ public struct InfomaniakDeviceCheck {
 
         let clientDataHash = Data(SHA256.hash(data: serverChallengeData))
 
-        let attestationData = try await service.attestKey(keyId, clientDataHash: clientDataHash)
+        let attestationData = try await service.attestKey(
+            keyId: keyId,
+            clientDataHash: clientDataHash,
+            forceTestValidation: forceTestValidation
+        )
 
         let authentificationToken = try await attestToken(
             targetUrl: targetUrl.absoluteString,
