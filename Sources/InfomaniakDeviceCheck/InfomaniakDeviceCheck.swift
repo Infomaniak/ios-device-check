@@ -22,6 +22,7 @@ public struct InfomaniakDeviceCheck {
     public static let tokenHeaderField = "Ik-mobile-token"
 
     private let baseURL: URL
+    private let environment: Environment
 
     enum ErrorDomain: Error {
         case notSupported
@@ -33,28 +34,34 @@ public struct InfomaniakDeviceCheck {
         case post = "POST"
     }
 
-    public init(apiURL: URL = URL(string: "https://example.com")!) {
+    public enum Environment {
+        case prod
+        case preprod
+    }
+
+    public init(apiURL: URL = URL(string: "https://example.com")!, environment: Environment = .prod) {
         baseURL = apiURL
+        self.environment = environment
     }
 
     /// Generate a token to access a protected API route
     /// - Parameters:
     ///   - targetUrl: The protected API URL
     ///   - bundleId: BundleId of the calling app
-    ///   - forceTestValidation: Bypass validation for testing purposes. Only working in preprod
+    ///   - bypassValidation: Skip attestation generation and validation. Only working in preprod.
     /// - Returns: A token passed in the headers. Use `InfomaniakDeviceCheck.tokenHeaderField` for the name
     public func generateAttestationFor(targetUrl: URL,
                                        bundleId: String,
-                                       forceTestValidation: Bool = false) async throws -> String {
+                                       bypassValidation: Bool = false) async throws -> String {
         let service = DCAppAttestService.shared
 
-        guard service.isSupported || forceTestValidation else {
+        guard service.isSupported || bypassValidation else {
             throw ErrorDomain.notSupported
         }
 
         let verificationChallengeId = UUID().uuidString
 
-        let keyId = try await service.generateKey(forceTestValidation: forceTestValidation)
+        let keyId = try await service.generateKey(bypassValidation: bypassValidation)
 
         let serverChallenge = try await serverChallenge(verificationChallengeId: verificationChallengeId)
 
@@ -67,7 +74,7 @@ public struct InfomaniakDeviceCheck {
         let attestationData = try await service.attestKey(
             keyId: keyId,
             clientDataHash: clientDataHash,
-            forceTestValidation: forceTestValidation
+            bypassValidation: bypassValidation
         )
 
         let authentificationToken = try await attestToken(
@@ -76,7 +83,7 @@ public struct InfomaniakDeviceCheck {
             keyId: keyId,
             challengeId: verificationChallengeId,
             attestation: attestationData.base64EncodedString(),
-            forceTestValidation: forceTestValidation
+            bypassValidation: bypassValidation
         )
 
         return authentificationToken
@@ -99,7 +106,7 @@ public struct InfomaniakDeviceCheck {
                      keyId: String,
                      challengeId: String,
                      attestation: String,
-                     forceTestValidation: Bool) async throws -> String {
+                     bypassValidation: Bool) async throws -> String {
         var parameters = [
             "target_url": targetUrl,
             "bundle_id": bundleId,
@@ -108,7 +115,7 @@ public struct InfomaniakDeviceCheck {
             "attestation": attestation
         ]
 
-        if forceTestValidation {
+        if environment == .preprod && !bypassValidation {
             parameters["force_attest_test"] = "true"
         }
 

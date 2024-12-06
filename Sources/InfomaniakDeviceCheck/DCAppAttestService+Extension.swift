@@ -14,16 +14,16 @@
 import DeviceCheck
 
 extension DCAppAttestService {
-    func generateKey(forceTestValidation: Bool) async throws -> String {
-        guard !forceTestValidation else {
+    func generateKey(bypassValidation: Bool) async throws -> String {
+        guard !bypassValidation else {
             return "test-key-id"
         }
 
         return try await generateKey()
     }
 
-    func attestKey(keyId: String, clientDataHash: Data, forceTestValidation: Bool) async throws -> Data {
-        guard !forceTestValidation else {
+    func attestKey(keyId: String, clientDataHash: Data, bypassValidation: Bool) async throws -> Data {
+        guard !bypassValidation else {
             return "test-attestation-data".data(using: .utf8) ?? Data()
         }
 
