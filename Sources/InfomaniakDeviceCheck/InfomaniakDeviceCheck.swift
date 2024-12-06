@@ -19,6 +19,8 @@ struct ValidApiResponse<T: Codable>: Codable {
 }
 
 public struct InfomaniakDeviceCheck {
+    public static let tokenHeaderField = "Ik-mobile-token"
+
     private let baseURL: URL
 
     enum ErrorDomain: Error {
@@ -32,7 +34,7 @@ public struct InfomaniakDeviceCheck {
     }
 
     public init(apiURL: URL = URL(string: "https://example.com")!) {
-        self.baseURL = apiURL
+        baseURL = apiURL
     }
 
     public func generateAttestationFor(targetUrl: URL, bundleId: String) async throws -> String {
