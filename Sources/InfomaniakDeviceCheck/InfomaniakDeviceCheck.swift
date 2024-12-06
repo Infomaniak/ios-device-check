@@ -37,6 +37,12 @@ public struct InfomaniakDeviceCheck {
         baseURL = apiURL
     }
 
+    /// Generate a token to access a protected API route
+    /// - Parameters:
+    ///   - targetUrl: The protected API URL
+    ///   - bundleId: BundleId of the calling app
+    ///   - forceTestValidation: Bypass validation for testing purposes. Only working in preprod
+    /// - Returns: A token passed in the headers. Use `InfomaniakDeviceCheck.tokenHeaderField` for the name
     public func generateAttestationFor(targetUrl: URL,
                                        bundleId: String,
                                        forceTestValidation: Bool = false) async throws -> String {
