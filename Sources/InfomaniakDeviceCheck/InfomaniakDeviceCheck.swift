@@ -37,7 +37,9 @@ public struct InfomaniakDeviceCheck {
         baseURL = apiURL
     }
 
-    public func generateAttestationFor(targetUrl: URL, bundleId: String) async throws -> String {
+    public func generateAttestationFor(targetUrl: URL,
+                                       bundleId: String,
+                                       forceTestValidation: Bool = false) async throws -> String {
         let service = DCAppAttestService.shared
 
         guard service.isSupported else {
@@ -62,7 +64,8 @@ public struct InfomaniakDeviceCheck {
             bundleId: bundleId,
             keyId: keyId,
             challengeId: verificationChallengeId,
-            attestation: attestationData.base64EncodedString()
+            attestation: attestationData.base64EncodedString(),
+            forceTestValidation: forceTestValidation
         )
 
         return authentificationToken
@@ -84,17 +87,24 @@ public struct InfomaniakDeviceCheck {
                      bundleId: String,
                      keyId: String,
                      challengeId: String,
-                     attestation: String) async throws -> String {
+                     attestation: String,
+                     forceTestValidation: Bool) async throws -> String {
+        var parameters = [
+            "target_url": targetUrl,
+            "bundle_id": bundleId,
+            "key_id": keyId,
+            "challenge_id": challengeId,
+            "attestation": attestation
+        ]
+
+        if forceTestValidation {
+            parameters["force_attest_test"] = "true"
+        }
+
         let request = try makeRequest(
             method: .post,
-            path: "/attest",
-            parameters: [
-                "target_url": targetUrl,
-                "bundle_id": bundleId,
-                "key_id": keyId,
-                "challenge_id": challengeId,
-                "attestation": attestation
-            ]
+            path: "",
+            parameters: parameters
         )
 
         let serverChallenge: ValidApiResponse<String> = try await performRequest(request)
@@ -104,7 +114,7 @@ public struct InfomaniakDeviceCheck {
 
     private func makeRequest(method: HTTPMethod, path: String, parameters: [String: String]) throws -> URLRequest {
         var urlComponents = URLComponents(url: baseURL, resolvingAgainstBaseURL: false)
-        urlComponents?.path = path
+        urlComponents?.path.append(path)
 
         if method == .get {
             let queryItems = parameters.map { URLQueryItem(name: $0, value: $1) }
