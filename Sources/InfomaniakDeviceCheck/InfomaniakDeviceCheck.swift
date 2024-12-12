@@ -39,7 +39,10 @@ public struct InfomaniakDeviceCheck: Sendable {
         case preprod
     }
 
-    public init(apiURL: URL = URL(string: "https://example.com")!, environment: Environment = .prod) {
+    public init(
+        apiURL: URL = URL(string: "https://api.infomaniak.com/1/attest")!,
+        environment: Environment = .prod
+    ) {
         baseURL = apiURL
         self.environment = environment
     }
@@ -121,7 +124,7 @@ public struct InfomaniakDeviceCheck: Sendable {
 
         let request = try makeRequest(
             method: .post,
-            path: "",
+            path: "/attestation",
             parameters: parameters
         )
 
