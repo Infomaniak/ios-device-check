@@ -34,17 +34,25 @@ public struct InfomaniakDeviceCheck: Sendable {
         case post = "POST"
     }
 
-    public enum Environment: Sendable {
-        case prod
-        case preprod
+    public struct Environment: Sendable, Equatable {
+        public static let prod = Environment(url: URL(string: "https://api.infomaniak.com/1/attest")!)
+        public static let preprod = Environment(
+            url: URL(string: "https://api.preprod.dev.infomaniak.ch/1/attest")!,
+            canBypassValidation: true
+        )
+
+        let url: URL
+        let canBypassValidation: Bool
+
+        public init(url: URL, canBypassValidation: Bool = false) {
+            self.url = url
+            self.canBypassValidation = canBypassValidation
+        }
     }
 
-    public init(
-        apiURL: URL = URL(string: "https://api.infomaniak.com/1/attest")!,
-        environment: Environment = .prod
-    ) {
-        baseURL = apiURL
+    public init(environment: Environment = .prod) {
         self.environment = environment
+        baseURL = environment.url
     }
 
     /// Generate a token to access a protected API route
@@ -118,7 +126,7 @@ public struct InfomaniakDeviceCheck: Sendable {
             "attestation": attestation
         ]
 
-        if environment == .preprod && !bypassValidation {
+        if environment.canBypassValidation && !bypassValidation {
             parameters["force_attest_test"] = "true"
         }
 
