@@ -72,7 +72,7 @@ public struct InfomaniakDeviceCheck: Sendable {
 
         let verificationChallengeId = UUID().uuidString
 
-        let keyId = try await service.generateKey(bypassValidation: bypassValidation)
+        let keyId = try await service.generateKeyIfNeeded(bypassValidation: bypassValidation)
 
         let serverChallenge = try await serverChallenge(verificationChallengeId: verificationChallengeId)
 
