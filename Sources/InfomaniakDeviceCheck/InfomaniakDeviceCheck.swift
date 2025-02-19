@@ -77,13 +77,10 @@ public struct InfomaniakDeviceCheck: Sendable {
             throw ErrorDomain.cannotConvertChallengeToData
         }
 
-        let keyId = try await service.generateKeyIfNeeded(bypassValidation: bypassValidation)
-
-        let clientDataHash = Data(SHA256.hash(data: serverChallengeData))
-        let attestationData = try await service.attestKey(
-            keyId: keyId,
-            clientDataHash: clientDataHash,
-            bypassValidation: bypassValidation
+        let (keyId, attestationData) = try await generateKeyAndAttest(
+            serverChallengeData: serverChallengeData,
+            bypassValidation: bypassValidation,
+            using: service
         )
 
         let authentificationToken = try await attestToken(
@@ -96,6 +93,35 @@ public struct InfomaniakDeviceCheck: Sendable {
         )
 
         return authentificationToken
+    }
+
+    func generateKeyAndAttest(serverChallengeData: Data, bypassValidation: Bool, using service: DCAppAttestService)
+        async throws -> (String, Data) {
+        let clientDataHash = Data(SHA256.hash(data: serverChallengeData))
+        do {
+            let keyId = try await service.generateOrGetKey(bypassValidation: bypassValidation)
+
+            let attestationData = try await service.attestKey(
+                keyId: keyId,
+                clientDataHash: clientDataHash,
+                bypassValidation: bypassValidation
+            )
+
+            return (keyId, attestationData)
+        } catch DCError.invalidKey {
+            // Key is invalid, we try to generate a new one.
+            let keyId = try await service.generateAndCacheKey(bypassValidation: bypassValidation)
+
+            let attestationData = try await service.attestKey(
+                keyId: keyId,
+                clientDataHash: clientDataHash,
+                bypassValidation: bypassValidation
+            )
+
+            return (keyId, attestationData)
+        } catch {
+            throw error
+        }
     }
 
     func serverChallenge(verificationChallengeId: String) async throws -> String {

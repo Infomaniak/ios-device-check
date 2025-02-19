@@ -14,20 +14,24 @@
 import DeviceCheck
 
 extension DCAppAttestService {
-    func generateKeyIfNeeded(bypassValidation: Bool) async throws -> String {
+    static let userDefaultsKey = "DeviceCheckKeyId"
+
+    func generateOrGetKey(bypassValidation: Bool) async throws -> String {
+        if let savedDeviceKeyId = UserDefaults.standard.string(forKey: DCAppAttestService.userDefaultsKey) {
+            return savedDeviceKeyId
+        } else {
+            return try await generateAndCacheKey(bypassValidation: bypassValidation)
+        }
+    }
+
+    func generateAndCacheKey(bypassValidation: Bool) async throws -> String {
         guard !bypassValidation else {
             return "test-key-id"
         }
 
-        let userDefaultsKey = "DeviceCheckKeyId"
-        if let savedDeviceKeyId = UserDefaults.standard.string(forKey: userDefaultsKey) {
-            return savedDeviceKeyId
-        } else {
-            let keyId = try await generateKey()
-
-            UserDefaults.standard.set(keyId, forKey: userDefaultsKey)
-            return keyId
-        }
+        let keyId = try await generateKey()
+        UserDefaults.standard.set(keyId, forKey: DCAppAttestService.userDefaultsKey)
+        return keyId
     }
 
     func attestKey(keyId: String, clientDataHash: Data, bypassValidation: Bool) async throws -> Data {
