@@ -71,17 +71,15 @@ public struct InfomaniakDeviceCheck: Sendable {
         }
 
         let verificationChallengeId = UUID().uuidString
-
-        let keyId = try await service.generateKeyIfNeeded(bypassValidation: bypassValidation)
-
         let serverChallenge = try await serverChallenge(verificationChallengeId: verificationChallengeId)
 
         guard let serverChallengeData = serverChallenge.data(using: .utf8) else {
             throw ErrorDomain.cannotConvertChallengeToData
         }
 
-        let clientDataHash = Data(SHA256.hash(data: serverChallengeData))
+        let keyId = try await service.generateKeyIfNeeded(bypassValidation: bypassValidation)
 
+        let clientDataHash = Data(SHA256.hash(data: serverChallengeData))
         let attestationData = try await service.attestKey(
             keyId: keyId,
             clientDataHash: clientDataHash,
