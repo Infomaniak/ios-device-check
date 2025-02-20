@@ -71,21 +71,16 @@ public struct InfomaniakDeviceCheck: Sendable {
         }
 
         let verificationChallengeId = UUID().uuidString
-
-        let keyId = try await service.generateKey(bypassValidation: bypassValidation)
-
         let serverChallenge = try await serverChallenge(verificationChallengeId: verificationChallengeId)
 
         guard let serverChallengeData = serverChallenge.data(using: .utf8) else {
             throw ErrorDomain.cannotConvertChallengeToData
         }
 
-        let clientDataHash = Data(SHA256.hash(data: serverChallengeData))
-
-        let attestationData = try await service.attestKey(
-            keyId: keyId,
-            clientDataHash: clientDataHash,
-            bypassValidation: bypassValidation
+        let (keyId, attestationData) = try await generateKeyAndAttest(
+            serverChallengeData: serverChallengeData,
+            bypassValidation: bypassValidation,
+            using: service
         )
 
         let authentificationToken = try await attestToken(
@@ -98,6 +93,35 @@ public struct InfomaniakDeviceCheck: Sendable {
         )
 
         return authentificationToken
+    }
+
+    func generateKeyAndAttest(serverChallengeData: Data, bypassValidation: Bool, using service: DCAppAttestService)
+        async throws -> (String, Data) {
+        let clientDataHash = Data(SHA256.hash(data: serverChallengeData))
+        do {
+            let keyId = try await service.generateOrGetKey(bypassValidation: bypassValidation)
+
+            let attestationData = try await service.attestKey(
+                keyId: keyId,
+                clientDataHash: clientDataHash,
+                bypassValidation: bypassValidation
+            )
+
+            return (keyId, attestationData)
+        } catch DCError.invalidKey {
+            // Key is invalid, we try to generate a new one.
+            let keyId = try await service.generateAndCacheKey(bypassValidation: bypassValidation)
+
+            let attestationData = try await service.attestKey(
+                keyId: keyId,
+                clientDataHash: clientDataHash,
+                bypassValidation: bypassValidation
+            )
+
+            return (keyId, attestationData)
+        } catch {
+            throw error
+        }
     }
 
     func serverChallenge(verificationChallengeId: String) async throws -> String {
