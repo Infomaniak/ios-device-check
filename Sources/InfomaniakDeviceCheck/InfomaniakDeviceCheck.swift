@@ -108,7 +108,7 @@ public struct InfomaniakDeviceCheck: Sendable {
             )
 
             return (keyId, attestationData)
-        } catch DCError.invalidKey {
+        } catch DCError.invalidKey, DCError.invalidInput {
             // Key is invalid, we try to generate a new one.
             let keyId = try await service.generateAndCacheKey(bypassValidation: bypassValidation)
 
