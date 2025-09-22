@@ -17,7 +17,7 @@ extension DCAppAttestService {
     static let userDefaultsKey = "DeviceCheckKeyId"
 
     func generateOrGetKey(bypassValidation: Bool) async throws -> String {
-        if let savedDeviceKeyId = UserDefaults.standard.string(forKey: DCAppAttestService.userDefaultsKey) {
+        if let savedDeviceKeyId = KeyIdCache().getKeyId() {
             return savedDeviceKeyId
         } else {
             return try await generateAndCacheKey(bypassValidation: bypassValidation)
@@ -30,7 +30,10 @@ extension DCAppAttestService {
         }
 
         let keyId = try await generateKey()
-        UserDefaults.standard.set(keyId, forKey: DCAppAttestService.userDefaultsKey)
+
+        let keyIdCache = KeyIdCache()
+        keyIdCache.setKeyId(keyId)
+
         return keyId
     }
 
